@@ -14,8 +14,48 @@ import {
 /** Files written by this extension's own commands — skip auto-apply for these. */
 const ownCreatedFiles = new Set<string>();
 
+/**
+ * Files that were just created by an external source and are awaiting a
+ * subsequent write before we apply the template.  We track them so that
+ * when another extension creates-then-writes (two-step), we apply our
+ * template on the write event rather than on the (potentially empty) create.
+ */
+const pendingCreatedFiles = new Set<string>();
+
 export function activate(context: vscode.ExtensionContext): void {
+    // Use a FileSystemWatcher instead of workspace.onDidCreateFiles so we
+    // catch files created by any means — including other extensions that
+    // write via Node's native fs or a language-server subprocess, neither of
+    // which fires onDidCreateFiles.
+    const watcher = vscode.workspace.createFileSystemWatcher('**/*');
+
     context.subscriptions.push(
+        watcher,
+        watcher.onDidCreate((uri) => {
+            if (ownCreatedFiles.has(uri.fsPath)) {
+                ownCreatedFiles.delete(uri.fsPath);
+                return;
+            }
+            const fileName = path.basename(uri.fsPath);
+            if (!findMatchingTemplate(fileName)) {
+                return;
+            }
+            // Mark as pending: another extension may write its own content
+            // right after creation.  We'll re-check on the first change event.
+            pendingCreatedFiles.add(uri.fsPath);
+            // Also schedule an immediate attempt for the case where the file
+            // is written in a single atomic operation (so no change fires).
+            autoApplyTemplate(uri);
+        }),
+        watcher.onDidChange((uri) => {
+            if (!pendingCreatedFiles.has(uri.fsPath)) {
+                return;
+            }
+            // Another extension just wrote content into a newly-created file —
+            // apply our template over it.
+            pendingCreatedFiles.delete(uri.fsPath);
+            autoApplyTemplate(uri);
+        }),
         vscode.commands.registerCommand(
             'file-templates.newFileFromTemplate',
             (uri?: vscode.Uri) => newFileFromTemplate(uri)
@@ -28,11 +68,6 @@ export function activate(context: vscode.ExtensionContext): void {
             'file-templates.newTemplate',
             () => newTemplate()
         ),
-        vscode.workspace.onDidCreateFiles((event) => {
-            for (const fileUri of event.files) {
-                autoApplyTemplate(fileUri);
-            }
-        })
     );
 }
 
@@ -189,6 +224,10 @@ async function autoApplyTemplate(fileUri: vscode.Uri): Promise<void> {
         ownCreatedFiles.delete(fileUri.fsPath);
         return;
     }
+
+    // We're handling this file now — remove from pending so the onDidChange
+    // listener doesn't fire a second apply.
+    pendingCreatedFiles.delete(fileUri.fsPath);
 
     const fileName = path.basename(fileUri.fsPath);
     const templateName = findMatchingTemplate(fileName);
