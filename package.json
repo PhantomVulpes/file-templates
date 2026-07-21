@@ -1,0 +1,60 @@
+{
+  "name": "file-templates",
+  "displayName": "File Templates",
+  "description": "Create new files from customizable templates with automatic template application based on filename suffixes.",
+  "version": "0.0.1",
+  "publisher": "file-templates",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/file-templates.git"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "file-templates.newFileFromTemplate",
+        "title": "New File from Template",
+        "category": "File Templates"
+      },
+      {
+        "command": "file-templates.manageTemplates",
+        "title": "Manage Templates",
+        "category": "File Templates"
+      },
+      {
+        "command": "file-templates.newTemplate",
+        "title": "New Template",
+        "category": "File Templates"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "file-templates.newFileFromTemplate",
+          "when": "explorerResourceIsFolder",
+          "group": "navigation@10"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "build": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.74.0",
+    "@types/node": "^18.0.0",
+    "typescript": "^5.0.0"
+  }
+}
