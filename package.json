@@ -3,13 +3,13 @@
   "displayName": "File Templates",
   "description": "Create new files from customizable templates with automatic template application based on filename suffixes.",
   "version": "0.0.1",
-  "publisher": "file-templates",
+  "publisher": "PhantomVulpes",
   "engines": {
     "vscode": "^1.74.0"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-username/file-templates.git"
+    "url": "https://github.com/PhantomVulpes/file-templates"
   },
   "categories": [
     "Other"

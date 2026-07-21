@@ -224,13 +224,11 @@ function buildDefaultTemplateContent(templateName) {
     switch (ext) {
         case '.cs':
             return [
-                'namespace {namespace}',
-                '{',
-                '    public class {fullName}',
-                '    {',
-                '    }',
-                '}',
+                'namespace {namespace};',
                 '',
+                'public class {fullName}',
+                '{',
+                '}',
             ].join('\n');
         case '.ts':
         case '.js':
