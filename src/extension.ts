@@ -11,6 +11,9 @@ import {
     applyVariables,
 } from './templateManager';
 
+/** Files written by this extension's own commands — skip auto-apply for these. */
+const ownCreatedFiles = new Set<string>();
+
 export function activate(context: vscode.ExtensionContext): void {
     context.subscriptions.push(
         vscode.commands.registerCommand(
@@ -101,6 +104,7 @@ async function newFileFromTemplate(folderUri?: vscode.Uri): Promise<void> {
     const ctx = buildContext(fileUri, templateName);
     const content = applyVariables(templateContent, ctx);
 
+    ownCreatedFiles.add(filePath);
     await vscode.workspace.fs.writeFile(fileUri, Buffer.from(content, 'utf-8'));
     const doc = await vscode.workspace.openTextDocument(fileUri);
     await vscode.window.showTextDocument(doc);
@@ -180,30 +184,21 @@ async function autoApplyTemplate(fileUri: vscode.Uri): Promise<void> {
         return;
     }
 
+    // Skip files that this extension created — template was already applied
+    if (ownCreatedFiles.has(fileUri.fsPath)) {
+        ownCreatedFiles.delete(fileUri.fsPath);
+        return;
+    }
+
     const fileName = path.basename(fileUri.fsPath);
     const templateName = findMatchingTemplate(fileName);
     if (!templateName) {
         return;
     }
 
-    // Only apply to empty files
     const openDoc = vscode.workspace.textDocuments.find(
         (d) => d.uri.fsPath === fileUri.fsPath
     );
-    if (openDoc) {
-        if (openDoc.getText().length > 0) {
-            return;
-        }
-    } else {
-        try {
-            const stat = await vscode.workspace.fs.stat(fileUri);
-            if (stat.size > 0) {
-                return;
-            }
-        } catch {
-            return;
-        }
-    }
 
     const templateContent = loadTemplate(templateName);
     if (templateContent === undefined) {
