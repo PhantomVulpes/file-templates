@@ -2,7 +2,7 @@
   "name": "file-templates",
   "displayName": "File Templates",
   "description": "Create new files from customizable templates with automatic template application based on filename suffixes.",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "publisher": "PhantomVulpes",
   "engines": {
     "vscode": "^1.74.0"
